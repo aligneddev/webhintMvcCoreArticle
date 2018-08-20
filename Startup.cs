@@ -51,7 +51,44 @@ namespace webhintMvcCoreArticle
             this.RemoveAndSetSecurityRelatedHeaders(app);
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                OnPrepareResponse = ctx =>
+                {
+                    Console.WriteLine("Header " + ctx.Context.Response.Headers["Content-Type"]);
+                    Console.WriteLine(ctx.Context.Request.Path);
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    if (ctx.Context.Request.Path.HasValue)
+                    {
+                        if(ctx.Context.Request.Path.Value.ToLower().Contains(".ico")){
+                            // don't change for .ico files
+                            return;
+                        }
+                        else  if(ctx.Context.Request.Path.Value.ToLower().Contains(".js")){
+                            var newContentType = "text/javascript; charset=utf-8";                            
+                            ctx.Context.Response.Headers.Remove("Content-Type");
+                            ctx.Context.Response.Headers.Append("Content-Type", newContentType);
+                            return;
+                        }
+
+                        if (ctx.Context.Response.Headers.TryGetValue("Content-Type", out var header))
+                        {
+                            var newContentType = ctx.Context.Response.Headers["Content-Type"] += "; charset=utf-8";
+                            ctx.Context.Response.Headers.Remove("Content-Type");
+                            ctx.Context.Response.Headers.Append("Content-Type", newContentType);
+                        }
+                        else
+                        {
+                            ctx.Context.Response.Headers.Append("Content-Type", "charset=utf-8");
+                            Console.WriteLine("new header");
+                        }
+                        Console.WriteLine("after Header " + ctx.Context.Response.Headers["Content-Type"]);
+                        Console.WriteLine("--------------------------");
+                    }
+                }
+            });
+
             app.UseCookiePolicy();
 
             app.UseMvc(routes =>
@@ -62,7 +99,7 @@ namespace webhintMvcCoreArticle
             });
         }
 
-        
+
         private void RemoveAndSetSecurityRelatedHeaders(IApplicationBuilder app)
         {
             // Registered before static files to always set header
