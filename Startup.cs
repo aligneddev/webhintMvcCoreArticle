@@ -48,6 +48,8 @@ namespace webhintMvcCoreArticle
                 app.UseHsts();
             }
 
+            this.RemoveAndSetSecurityRelatedHeaders(app);
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
@@ -58,6 +60,18 @@ namespace webhintMvcCoreArticle
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+        }
+
+        
+        private void RemoveAndSetSecurityRelatedHeaders(IApplicationBuilder app)
+        {
+            // Registered before static files to always set header
+
+            // 'strict-transport-security' header 'max-age' value should be more than 10886400
+            app.UseHsts(options => options.MaxAge(days: 180).IncludeSubdomains());
+            app.UseXContentTypeOptions();
+            app.UseReferrerPolicy(opts => opts.NoReferrer());
+            app.UseXXssProtection(options => options.EnabledWithBlockMode());
         }
     }
 }
